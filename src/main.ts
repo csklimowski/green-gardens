@@ -1,8 +1,15 @@
+import { Button } from "./objects";
+
 const PLANT_WIDTH = 90;
 const PLANT_HEIGHT = 60;
 
+
 function itox(i: number) {
     return i*PLANT_WIDTH + 90;
+}
+
+function xtoi(x: number) {
+    return Math.floor(((x - 45) / 90));
 }
 
 function pick(arr: any[]) {
@@ -11,21 +18,18 @@ function pick(arr: any[]) {
 
 class PlantSegment extends Phaser.GameObjects.Image {
     plantType: number;
-    species: number;
-    constructor(scene: Phaser.Scene, x: number, y: number, species?: number) {
+    constructor(scene: Phaser.Scene, x: number, y: number) {
         let type = pick([0, 1, 2, 3, 4]);
-        super(scene, x, y, 'plant' + (species === 2 ? '2' : ''), type);
+        super(scene, x, y, 'plant', type);
         scene.add.existing(this);
         this.setFlipX(Math.random() > 0.5);
         this.plantType = type;
-        if (!species) this.species = 1;
-        else this.species = species;
     }
     highlight() {
-        this.setTexture('plant' + (this.species === 2 ? '2' : '') + '-highlight', this.plantType);
+        this.setTexture('plant-highlight', this.plantType);
     }
     unhighlight() {
-        this.setTexture('plant' + (this.species === 2 ? '2' : ''), this.plantType);
+        this.setTexture('plant', this.plantType);
     }
 }
 
@@ -35,25 +39,19 @@ class Plant  {
     segments: PlantSegment[];
     height: number;
     scene: Phaser.Scene;
-    species: number;
 
-    constructor(scene: Phaser.Scene, x: number, y: number, species?: number) {
+    constructor(scene: Phaser.Scene, x: number, y: number) {
         this.scene = scene;
         this.x = x;
         this.y = y;
         this.height = 0;
         this.segments = [
-            new PlantSegment(scene, x, y, species)
+            new PlantSegment(scene, x, y)
         ];
-
-        if (!species) this.species = 1;
-        else this.species = 2;
-
-        
     }
 
     grow(slow?: boolean) {
-        this.segments.push(new PlantSegment(this.scene, this.x, this.y + PLANT_HEIGHT, this.species));
+        this.segments.push(new PlantSegment(this.scene, this.x, this.y + PLANT_HEIGHT));
         for (let seg of this.segments) {
             if (slow) {
                 this.scene.tweens.add({
@@ -71,7 +69,7 @@ class Plant  {
 
     cut() {
         let segmentBag = this.scene.add.container(this.x, this.y-PLANT_HEIGHT);
-        segmentBag.setDepth(3);
+        segmentBag.setDepth(2);
         for (let i = 0; i < this.height; i++) {
             this.segments[i].setX(0);
             this.segments[i].setY((-this.height + i + 1)*PLANT_HEIGHT);
@@ -151,15 +149,12 @@ class Goal extends Phaser.GameObjects.Container {
     amount: number;
     achieved: boolean;
     squares: Phaser.GameObjects.Sprite[];
-    species: number;
     
-    constructor(scene: Phaser.Scene, x: number, y: number, amount: number, species?: number) {
+    constructor(scene: Phaser.Scene, x: number, y: number, amount: number) {
         super(scene, x, y);
         scene.add.existing(this);
         this.setDepth(2);
         this.amount = amount;
-        if (!species) this.species = 1;
-        else this.species = species;
 
         this.squares = [];
         for (let i = 0; i < amount; i++) {
@@ -182,8 +177,12 @@ export class MainScene extends Phaser.Scene {
     cloud: Cloud;
     cutter: Cutter;
     playerTurn: boolean;
-
     goals: Goal[];
+
+    shade: Phaser.GameObjects.Rectangle;
+    tutorialText: Phaser.GameObjects.Image;
+    tutorialButton: Button;
+    endMenu: Phaser.GameObjects.Container;
 
     constructor() {
         super('main');
@@ -216,113 +215,112 @@ export class MainScene extends Phaser.Scene {
         bg.setOrigin(0.5, 0);
         bg.setDepth(1);
 
-        if (false) {
-            // this.goals = [
-            //     new Goal(this, 100, 680, 1),
-            //     new Goal(this, 130, 680, 1),
-            //     new Goal(this, 160, 680, 1),
-            //     new Goal(this, 190, 680, 1),
-            //     new Goal(this, 250, 680, 2),
-            //     new Goal(this, 280, 680, 2),
-            //     new Goal(this, 310, 680, 2),
-            //     new Goal(this, 370, 680, 3),
-            //     new Goal(this, 400, 680, 3),
-            //     new Goal(this, 460, 680, 4),
-            // ];
+        let difficulty = this.registry.get('difficulty') || 0;
 
+        if (difficulty === 0) {
             this.goals = [
-                new Goal(this, 70, 680, 1),
-                new Goal(this, 100, 680, 1),
-                new Goal(this, 130, 680, 1),
-                new Goal(this, 160, 680, 1),
-                new Goal(this, 190, 680, 2),
-                new Goal(this, 250, 680, 2),
-                new Goal(this, 280, 680, 2),
-                new Goal(this, 310, 680, 2),
-                new Goal(this, 370, 680, 3),
-                new Goal(this, 400, 680, 3),
-                new Goal(this, 460, 680, 4),
-                new Goal(this, 490, 680, 4),
+                new Goal(this, 100, 670, 1),
+                new Goal(this, 130, 670, 1),
+                new Goal(this, 160, 670, 1),
+                new Goal(this, 190, 670, 1),
+                new Goal(this, 250, 670, 2),
+                new Goal(this, 280, 670, 2),
+                new Goal(this, 310, 670, 2),
+                new Goal(this, 370, 670, 3),
+                new Goal(this, 400, 670, 3),
+                new Goal(this, 460, 670, 4),
+            ];
+        } else if (difficulty === 1) {
+            this.goals = [
+                new Goal(this, 70, 670, 1),
+                new Goal(this, 100, 670, 1),
+                new Goal(this, 130, 670, 1),
+                new Goal(this, 160, 670, 1),
+                new Goal(this, 190, 670, 2),
+                new Goal(this, 250, 670, 2),
+                new Goal(this, 280, 670, 2),
+                new Goal(this, 310, 670, 2),
+                new Goal(this, 370, 670, 3),
+                new Goal(this, 400, 670, 3),
+                new Goal(this, 460, 670, 4),
+                new Goal(this, 490, 670, 4),
+            ];
+        } else if (difficulty === 2) {
+            this.goals = [
+                new Goal(this, 40, 670, 1),
+                new Goal(this, 70, 670, 1),
+                new Goal(this, 100, 670, 1),
+                new Goal(this, 130, 670, 1),
+                new Goal(this, 160, 670, 1),
+                new Goal(this, 220, 670, 2),
+                new Goal(this, 250, 670, 2),
+                new Goal(this, 280, 670, 2),
+                new Goal(this, 310, 670, 2),
+                new Goal(this, 370, 670, 3),
+                new Goal(this, 400, 670, 3),
+                new Goal(this, 430, 670, 3),
+                new Goal(this, 490, 670, 4),
+                new Goal(this, 520, 670, 4),
+                new Goal(this, 580, 670, 5),
             ];
         } else {
             this.goals = [
-                new Goal(this, 40, 680, 1),
-                new Goal(this, 70, 680, 1),
-                new Goal(this, 100, 680, 1),
-                new Goal(this, 130, 680, 1),
-                new Goal(this, 160, 680, 1),
-                new Goal(this, 250, 680, 2),
-                new Goal(this, 280, 680, 2),
-                new Goal(this, 310, 680, 2),
-                new Goal(this, 340, 680, 2),
-                new Goal(this, 370, 680, 3),
-                new Goal(this, 400, 680, 3),
-                new Goal(this, 430, 680, 3),
-                new Goal(this, 460, 680, 4),
-                new Goal(this, 490, 680, 4),
-                new Goal(this, 520, 680, 5),
+                new Goal(this, 40, 670, 1),
+                new Goal(this, 70, 670, 1),
+                new Goal(this, 100, 670, 1),
+                new Goal(this, 130, 670, 1),
+                new Goal(this, 160, 670, 1),
+                new Goal(this, 190, 670, 1),
+                new Goal(this, 250, 670, 2),
+                new Goal(this, 280, 670, 2),
+                new Goal(this, 310, 670, 2),
+                new Goal(this, 340, 670, 2),
+                new Goal(this, 400, 670, 3),
+                new Goal(this, 430, 670, 3),
+                new Goal(this, 460, 670, 3),
+                new Goal(this, 490, 670, 3),
+                new Goal(this, 520, 670, 4),
+                new Goal(this, 550, 670, 4),
+                new Goal(this, 610, 670, 5),
+                new Goal(this, 640, 670, 5),
             ];
-
-
-            // this.goals = [
-            //     new Goal(this, 40, 680, 1),
-            //     new Goal(this, 70, 680, 1),
-            //     new Goal(this, 100, 680, 1),
-            //     new Goal(this, 130, 680, 1),
-            //     new Goal(this, 160, 680, 1),
-            //     new Goal(this, 190, 680, 1),
-            //     new Goal(this, 250, 680, 2),
-            //     new Goal(this, 280, 680, 2),
-            //     new Goal(this, 310, 680, 2),
-            //     new Goal(this, 340, 680, 2),
-            //     new Goal(this, 400, 680, 3),
-            //     new Goal(this, 430, 680, 3),
-            //     new Goal(this, 460, 680, 3),
-            //     new Goal(this, 490, 680, 3),
-            //     new Goal(this, 520, 680, 4),
-            //     new Goal(this, 550, 680, 4),
-            //     new Goal(this, 610, 680, 5),
-            //     new Goal(this, 640, 680, 5),
-            // ];
-
-            // this.goals = [
-            //     new Goal(this, -20, 680, 1, 1),
-            //     new Goal(this, 10, 680, 1, 1),
-            //     new Goal(this, 40, 680, 1, 1),
-            //     new Goal(this, 70, 680, 1, 1),
-            //     new Goal(this, 100, 680, 2, 1),
-            //     new Goal(this, 130, 680, 2, 1),
-            //     new Goal(this, 160, 680, 2, 1),
-            //     new Goal(this, 190, 680, 3, 1),
-            //     new Goal(this, 220, 680, 3, 1),
-            //     new Goal(this, 250, 680, 4, 1),
-            //     new Goal(this, 310, 680, 1, 2),
-            //     new Goal(this, 340, 680, 1, 2),
-            //     new Goal(this, 370, 680, 1, 2),
-            //     new Goal(this, 400, 680, 2, 2),
-            //     new Goal(this, 430, 680, 2, 2),
-            //     new Goal(this, 460, 680, 3, 2)
-            // ];
-        }
-
-
-        for (let goal of this.goals) {
-            goal.x += 80;
-            goal.y -= 10;
         }
 
         this.playerTurn = true;
 
         this.input.on(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
-        this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
         this.input.on(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
+
+        
+        this.shade = this.add.rectangle(360, 360, 720, 720, 0x000000);
+        
+        this.shade.setAlpha(0);
+        this.shade.setDepth(3);
+        this.tutorialButton = new Button(this, 670, 50, 'button-tutorial', this.toggleTutorial.bind(this));
+        this.tutorialButton.setDepth(4);
+        this.tutorialText = this.add.image(360, 350, 'text-tutorial');
+        this.tutorialText.setAlpha(0);
+        this.tutorialText.setDepth(4);
+        this.endMenu = this.add.container(0, 0);
+        this.endMenu.setAlpha(0);
+        this.endMenu.setDepth(4);
     }
 
-    onPointerDown() {
-
+    toggleTutorial() {
+        if (this.tutorialText.alpha === 0) {
+            this.tutorialText.setAlpha(1);
+            this.shade.setAlpha(.7);
+            this.tutorialButton.setTexture('button-x');
+            this.playerTurn = false;
+        } else {
+            this.tutorialText.setAlpha(0);
+            this.shade.setAlpha(0);
+            this.tutorialButton.setTexture('button-tutorial');
+            this.playerTurn = true;
+        }
     }
 
-    onPointerMove() {
+    onPointerMove(event) {
         let x = this.input.activePointer.worldX;
         let y = this.input.activePointer.worldY;
         if (this.playerTurn && y > 100 && y < 700) {
@@ -348,112 +346,122 @@ export class MainScene extends Phaser.Scene {
             }
             this.cutter.hide();
         }
+        
+        // if (this.selecting) {
+        //     let i = xtoi(x);
+        //     this.upi = i;
+        //     this.plants[i].highlight();
+        // }
+        // let x = this.input.activePointer.worldX;
+        // let y = this.input.activePointer.worldY;
+        // if (this.playerTurn && y > 100 && y < 700) {
+        //     if (li > -1 && li < 6) {
+        //         this.cutter.goTo(li);
+        //         for (let i = 0; i < this.plants.length; i++) {
+        //             if (i === li || i === li + 1) {
+        //                 this.plants[i].highlight();
+        //             } else {
+        //                 this.plants[i].unhighlight();
+        //             }
+        //         }
+        //     } else {
+        //         for (let plant of this.plants) {
+        //             plant.unhighlight();
+        //         }
+        //         this.cutter.hide();
+        //     }
+        // } else {
+        //     for (let plant of this.plants) {
+        //         plant.unhighlight();
+        //     }
+        //     this.cutter.hide();
+        // }
     }
 
     onPointerUp() {
-        if (this.playerTurn && this.cutter.li > -1 && this.cutter.li < 6) {
+        if (!this.playerTurn) return;
+        if (this.cutter.li < 0 || this.cutter.li > 5) return;
 
-            this.cutter.anims.play('cut');
+        let cutPlants: Plant[] = [];
+        let cutSegments: Phaser.GameObjects.Container[] = [];
+        let tweens: any[][] = [];
+        let goals: Goal[] = [];
 
-            let plant1 = this.plants[this.cutter.li];
-            let plant2 = this.plants[this.cutter.li + 1];
+        this.cutter.anims.play('cut');
 
-            plant1.unhighlight();
-            let segs1 = plant1.cut();
-            plant2.unhighlight();
-            let segs2 = plant2.cut();
-
-            let segs1tweens: any[] = [{
+        for (let i = this.cutter.li; i <= this.cutter.li+1; i++) {
+            this.plants[i].unhighlight();
+            cutPlants.push(this.plants[i]);
+            let segs = this.plants[i].cut();
+            cutSegments.push(segs);
+            tweens.push([{
                 props: {
-                    y: segs1.y - (60 + Math.random()*10),
+                    y: segs.y - (60 + Math.random()*10),
                     angle: Math.random() * 10 - 5
                 },
                 duration: 300,
                 ease: Phaser.Math.Easing.Quadratic.Out
-            }];
-
-            let segs2tweens: any[] = [{
-                props: {
-                    y: segs2.y - (60 + Math.random()*10),
-                    angle: Math.random() * 10 - 5
-                },
-                duration: 300,
-                ease: Phaser.Math.Easing.Quadratic.Out
-            }];
-            
-            let segs1goal: Goal = null;
-            let segs2goal: Goal = null;
-
-            for (let goal of this.goals) {
-                if (!goal.achieved) {
-                    if (!segs1goal && goal.amount === segs1.length && goal.species === plant1.species) {
-                        segs1goal = goal;
-                    } else if (!segs2goal && goal.amount === segs2.length && goal.species === plant2.species) {
-                        segs2goal = goal;
-                    }
-                }
-            }
-
-            if (segs1goal) {
-                segs1tweens.push({
-                    props: {
-                        y: segs1goal.y,
-                        x: segs1goal.x,
-                        scaleX: 0.3,
-                        scaleY: 0.3
-                    },
-                    duration: 500,
-                    ease: Phaser.Math.Easing.Cubic.In
-                });
-                
-                this.tweens.timeline({
-                    targets: segs1,
-                    tweens: segs1tweens,
-                    onComplete: () => {
-                        segs1goal.achieve();
-                        segs1.destroy();
-                        this.playerTurn = true;
-                        this.cutter.setFrame(5);
-                        this.onPointerMove();
-                    }
-                });
-            }
-
-            if (segs2goal) {
-                segs2tweens.push({
-                    props: {
-                        y: segs2goal.y,
-                        x: segs2goal.x,
-                        scaleX: 0.3,
-                        scaleY: 0.3
-                    },
-                    delay: 150,
-                    duration: 500,
-                    ease: Phaser.Math.Easing.Cubic.In
-                });
-
-                this.tweens.timeline({
-                    targets: segs2,
-                    tweens: segs2tweens,
-                    onComplete: () => {
-                        segs2goal.achieve();
-                        segs2.destroy();
-                        this.playerTurn = true;
-                        this.cutter.setFrame(5);
-                        this.onPointerMove();
-                    }
-                });
-            }
-
-            for (let i = 0; i < this.plants.length; i++) {
-                if (i !== this.cloud.li && i !== this.cloud.li + 1) {
-                    this.plants[i].grow(true);
-                }
-            }
-
-            this.cloud.move();
-
-            this.playerTurn = false;
+            }]);
         }
+
+        for (let goal of this.goals) {
+            if (!goal.achieved) {
+                for (let i = 0; i < cutPlants.length; i++) {
+                    if (!goals[i] && goal.amount === cutSegments[i].length) {
+                        goals[i] = goal;
+                        break;
+                    }
+                }
+            }
+        }
+
+        for (let i = 0; i < cutPlants.length; i++) {
+            if (goals[i]) {
+                tweens[i].push({
+                    props: {
+                        y: goals[i].y,
+                        x: goals[i].x,
+                        scaleX: 0.3,
+                        scaleY: 0.3
+                    },
+                    duration: 500,
+                    ease: Phaser.Math.Easing.Cubic.In
+                });
+
+                this.tweens.timeline({
+                    targets: cutSegments[i],
+                    tweens: tweens[i],
+                    onComplete: () => {
+                        goals[i].achieve();
+                        cutSegments[i].destroy();
+                        this.playerTurn = true;
+                        this.cutter.setFrame(5);
+                    }
+                });
+            } else {
+                this.tweens.timeline({
+                    targets: cutSegments[i],
+                    tweens: tweens[i],
+                    onComplete: () => {
+                        for (let segment of <PlantSegment[]>cutSegments[i].getAll()) {
+                            segment.setTexture('plant-bad', segment.plantType);
+                        }
+                        this.playerTurn = true;
+                        this.cutter.setFrame(5);
+
+                    }
+                });
+            }
+        }
+
+        for (let i = 0; i < this.plants.length; i++) {
+            if (i !== this.cloud.li && i !== this.cloud.li + 1) {
+                this.plants[i].grow(true);
+            }
+        }
+
+        this.cloud.move();
+
+        this.playerTurn = false;
     }
 }
