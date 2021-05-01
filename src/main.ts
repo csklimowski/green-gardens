@@ -19,7 +19,9 @@ function pick(arr: any[]) {
 class PlantSegment extends Phaser.GameObjects.Image {
     plantType: number;
     constructor(scene: Phaser.Scene, x: number, y: number) {
-        let type = pick([0, 1, 2, 3, 4]);
+        let type;
+        if (Math.random() < 0.01) type = 0;
+        else type = pick([1, 2, 3, 4, 5]);
         super(scene, x, y, 'plant', type);
         scene.add.existing(this);
         this.setFlipX(Math.random() > 0.5);
