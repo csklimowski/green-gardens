@@ -11,8 +11,8 @@ export class LoadScene extends Phaser.Scene {
         this.load.spritesheet('plant-bad', 'img/plant-bad.png', { frameWidth: 100, frameHeight: 55});
         this.load.spritesheet('plant2', 'img/plant2.png', { frameWidth: 100, frameHeight: 55});
         this.load.spritesheet('plant2-highlight', 'img/plant2-highlight.png', { frameWidth: 100, frameHeight: 55});
-        this.load.spritesheet('cut', 'img/cut2.png', { frameWidth: 300, frameHeight: 50 });
-        this.load.spritesheet('goal', 'img/goal2.png', { frameWidth: 44, frameHeight: 44 });
+        this.load.spritesheet('cut', 'img/cutter.png', { frameWidth: 300, frameHeight: 50 });
+        this.load.spritesheet('goal', 'img/goal.png', { frameWidth: 44, frameHeight: 44 });
         this.load.image('cutter', 'img/cutter.png');
         this.load.image('cloud', 'img/cloud.png');
         this.load.image('logo', 'img/logo.png');
