@@ -176,8 +176,10 @@ export class MainScene extends Phaser.Scene {
     plants: Plant[];
     cloud: Cloud;
     cutter: Cutter;
-    playerTurn: boolean;
     goals: Goal[];
+    playerTurn: boolean;
+    finished: boolean;
+    lost: boolean;
 
     shade: Phaser.GameObjects.Rectangle;
     tutorialText: Phaser.GameObjects.Image;
@@ -217,51 +219,51 @@ export class MainScene extends Phaser.Scene {
 
         let difficulty = this.registry.get('difficulty') || 0;
 
-        if (difficulty === 0) {
+        if (difficulty === 1) {
             this.goals = [
-                new Goal(this, 100, 670, 1),
-                new Goal(this, 130, 670, 1),
-                new Goal(this, 160, 670, 1),
-                new Goal(this, 190, 670, 1),
-                new Goal(this, 250, 670, 2),
-                new Goal(this, 280, 670, 2),
-                new Goal(this, 310, 670, 2),
-                new Goal(this, 370, 670, 3),
-                new Goal(this, 400, 670, 3),
-                new Goal(this, 460, 670, 4),
-            ];
-        } else if (difficulty === 1) {
-            this.goals = [
-                new Goal(this, 70, 670, 1),
-                new Goal(this, 100, 670, 1),
-                new Goal(this, 130, 670, 1),
-                new Goal(this, 160, 670, 1),
-                new Goal(this, 190, 670, 2),
-                new Goal(this, 250, 670, 2),
-                new Goal(this, 280, 670, 2),
-                new Goal(this, 310, 670, 2),
-                new Goal(this, 370, 670, 3),
-                new Goal(this, 400, 670, 3),
-                new Goal(this, 460, 670, 4),
-                new Goal(this, 490, 670, 4),
+                new Goal(this, 170, 670, 1),
+                new Goal(this, 200, 670, 1),
+                new Goal(this, 230, 670, 1),
+                new Goal(this, 260, 670, 1),
+                new Goal(this, 320, 670, 2),
+                new Goal(this, 350, 670, 2),
+                new Goal(this, 380, 670, 2),
+                new Goal(this, 440, 670, 3),
+                new Goal(this, 470, 670, 3),
+                new Goal(this, 530, 670, 4),
             ];
         } else if (difficulty === 2) {
             this.goals = [
-                new Goal(this, 40, 670, 1),
-                new Goal(this, 70, 670, 1),
-                new Goal(this, 100, 670, 1),
-                new Goal(this, 130, 670, 1),
-                new Goal(this, 160, 670, 1),
-                new Goal(this, 220, 670, 2),
-                new Goal(this, 250, 670, 2),
-                new Goal(this, 280, 670, 2),
-                new Goal(this, 310, 670, 2),
-                new Goal(this, 370, 670, 3),
-                new Goal(this, 400, 670, 3),
-                new Goal(this, 430, 670, 3),
-                new Goal(this, 490, 670, 4),
-                new Goal(this, 520, 670, 4),
-                new Goal(this, 580, 670, 5),
+                new Goal(this, 140, 670, 1),
+                new Goal(this, 170, 670, 1),
+                new Goal(this, 200, 670, 1),
+                new Goal(this, 230, 670, 1),
+                new Goal(this, 290, 670, 2),
+                new Goal(this, 320, 670, 2),
+                new Goal(this, 350, 670, 2),
+                new Goal(this, 380, 670, 2),
+                new Goal(this, 440, 670, 3),
+                new Goal(this, 470, 670, 3),
+                new Goal(this, 530, 670, 4),
+                new Goal(this, 560, 670, 4),
+            ];
+        } else if (difficulty === 3) {
+            this.goals = [
+                new Goal(this, 90, 670, 1),
+                new Goal(this, 120, 670, 1),
+                new Goal(this, 150, 670, 1),
+                new Goal(this, 180, 670, 1),
+                new Goal(this, 210, 670, 1),
+                new Goal(this, 270, 670, 2),
+                new Goal(this, 300, 670, 2),
+                new Goal(this, 330, 670, 2),
+                new Goal(this, 360, 670, 2),
+                new Goal(this, 420, 670, 3),
+                new Goal(this, 450, 670, 3),
+                new Goal(this, 480, 670, 3),
+                new Goal(this, 540, 670, 4),
+                new Goal(this, 570, 670, 4),
+                new Goal(this, 630, 670, 5),
             ];
         } else {
             this.goals = [
@@ -279,16 +281,19 @@ export class MainScene extends Phaser.Scene {
                 new Goal(this, 430, 670, 3),
                 new Goal(this, 460, 670, 3),
                 new Goal(this, 490, 670, 3),
-                new Goal(this, 520, 670, 4),
                 new Goal(this, 550, 670, 4),
-                new Goal(this, 610, 670, 5),
+                new Goal(this, 580, 670, 4),
                 new Goal(this, 640, 670, 5),
+                new Goal(this, 670, 670, 5),
             ];
         }
 
         this.playerTurn = true;
+        this.finished = false;
+        this.lost = false;
 
         this.input.on(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
+        this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerMove, this);
         this.input.on(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
 
         
@@ -320,10 +325,67 @@ export class MainScene extends Phaser.Scene {
         }
     }
 
+    allFinished() {
+        if (this.finished) return;
+        this.tutorialButton.setVisible(false);
+        this.finished = true;
+
+        this.shade.setAlpha(0.7);
+        this.endMenu.setAlpha(1);
+
+        let winStreak = this.registry.get('winStreak');
+        let bestStreak = this.registry.get('bestStreak');
+        if (this.lost) {
+            this.endMenu.add(this.add.image(360, 100, 'text-loss', pick([0, 1, 2, 3, 4, 5, 6])));
+            if (this.registry.get('difficulty') === 4) {
+                winStreak = 0;
+            }
+        } else {
+            this.endMenu.add(this.add.image(360, 100, 'text-win', pick([0, 1, 2, 3, 4, 5, 6])));
+            this.registry.set('highestBeaten', Math.max(this.registry.get('difficulty'), this.registry.get('highestBeaten')));
+            if (this.registry.get('difficulty') === 4) {
+                winStreak += 1;
+                bestStreak = Math.max(bestStreak, winStreak);
+            }
+        }
+
+        this.registry.set('winStreak', winStreak);
+        this.registry.set('bestStreak', bestStreak);
+        localStorage.setItem('green_gardens_data', JSON.stringify(this.registry.values));
+        
+        let playAgainText = this.add.bitmapText(360, 180, 'words', 'Play again?', 80);
+        playAgainText.setOrigin(0.5);
+        this.endMenu.add([
+            playAgainText,
+            new Button(this, 360, 260, 'button-beginner', () => {
+                this.registry.set('difficulty', 1);
+                this.scene.start('main');
+            }),
+            new Button(this, 360, 340, 'button-intermediate', () => {
+                this.registry.set('difficulty', 2);
+                this.scene.start('main');
+            }, this.registry.get('highestBeaten') < 1),
+            new Button(this, 360, 420, 'button-expert', () => {
+                this.registry.set('difficulty', 3);
+                this.scene.start('main');
+            }, this.registry.get('highestBeaten') < 2),
+            new Button(this, 360, 500, 'button-grandmaster', () => {
+                this.registry.set('difficulty', 4);
+                this.scene.start('main');
+            }, this.registry.get('highestBeaten') < 3),
+        ]);
+
+        if (bestStreak > 0) {
+            this.add.bitmapText(360, 500, 'words', 'grandmaster win streak: ' + (
+                bestStreak <= winStreak ? winStreak : (winStreak + ' (best: ' + bestStreak + ')')
+            ), 80).setOrigin(0.5, 0);
+        }
+    }
+
     onPointerMove(event) {
         let x = this.input.activePointer.worldX;
         let y = this.input.activePointer.worldY;
-        if (this.playerTurn && y > 100 && y < 700) {
+        if (this.playerTurn && !this.finished && y > 100 && y < 700) {
             let li = Math.floor(((x - 90) / 90));
             if (li > -1 && li < 6) {
                 this.cutter.goTo(li);
@@ -346,40 +408,10 @@ export class MainScene extends Phaser.Scene {
             }
             this.cutter.hide();
         }
-        
-        // if (this.selecting) {
-        //     let i = xtoi(x);
-        //     this.upi = i;
-        //     this.plants[i].highlight();
-        // }
-        // let x = this.input.activePointer.worldX;
-        // let y = this.input.activePointer.worldY;
-        // if (this.playerTurn && y > 100 && y < 700) {
-        //     if (li > -1 && li < 6) {
-        //         this.cutter.goTo(li);
-        //         for (let i = 0; i < this.plants.length; i++) {
-        //             if (i === li || i === li + 1) {
-        //                 this.plants[i].highlight();
-        //             } else {
-        //                 this.plants[i].unhighlight();
-        //             }
-        //         }
-        //     } else {
-        //         for (let plant of this.plants) {
-        //             plant.unhighlight();
-        //         }
-        //         this.cutter.hide();
-        //     }
-        // } else {
-        //     for (let plant of this.plants) {
-        //         plant.unhighlight();
-        //     }
-        //     this.cutter.hide();
-        // }
     }
 
     onPointerUp() {
-        if (!this.playerTurn) return;
+        if (!this.playerTurn || this.finished) return;
         if (this.cutter.li < 0 || this.cutter.li > 5) return;
 
         let cutPlants: Plant[] = [];
@@ -403,16 +435,26 @@ export class MainScene extends Phaser.Scene {
                 ease: Phaser.Math.Easing.Quadratic.Out
             }]);
         }
+        
 
-        for (let goal of this.goals) {
-            if (!goal.achieved) {
-                for (let i = 0; i < cutPlants.length; i++) {
-                    if (!goals[i] && goal.amount === cutSegments[i].length) {
+        for (let i = 0; i < cutPlants.length; i++) {
+            for (let goal of this.goals) {
+                if (!goal.achieved) {
+                    if (goal.amount === cutSegments[i].length) {
+                        goal.achieved = true;
                         goals[i] = goal;
                         break;
                     }
                 }
             }
+            if (cutSegments[i].length > 0 && !goals[i]) {
+                this.lost = true;
+            }
+        }
+
+        let allGoalsComplete = true;
+        for (let goal of this.goals) {
+            if (!goal.achieved) allGoalsComplete = false;
         }
 
         for (let i = 0; i < cutPlants.length; i++) {
@@ -427,31 +469,35 @@ export class MainScene extends Phaser.Scene {
                     duration: 500,
                     ease: Phaser.Math.Easing.Cubic.In
                 });
+            }
 
-                this.tweens.timeline({
-                    targets: cutSegments[i],
-                    tweens: tweens[i],
-                    onComplete: () => {
+            this.tweens.timeline({
+                targets: cutSegments[i],
+                tweens: tweens[i],
+                onComplete: () => {
+                    if (goals[i]) {
                         goals[i].achieve();
                         cutSegments[i].destroy();
-                        this.playerTurn = true;
-                        this.cutter.setFrame(5);
-                    }
-                });
-            } else {
-                this.tweens.timeline({
-                    targets: cutSegments[i],
-                    tweens: tweens[i],
-                    onComplete: () => {
+                    } else {
                         for (let segment of <PlantSegment[]>cutSegments[i].getAll()) {
                             segment.setTexture('plant-bad', segment.plantType);
                         }
-                        this.playerTurn = true;
-                        this.cutter.setFrame(5);
-
                     }
-                });
-            }
+
+                    if (i === 1) {
+                        if (allGoalsComplete || this.lost) {
+                            this.time.addEvent({
+                                delay: 1000,
+                                callback: this.allFinished,
+                                callbackScope: this
+                            });
+                        } else {
+                            this.playerTurn = true;
+                            this.cutter.setFrame(5);
+                        }
+                    }
+                }
+            });
         }
 
         for (let i = 0; i < this.plants.length; i++) {
