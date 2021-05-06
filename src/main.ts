@@ -378,9 +378,11 @@ export class MainScene extends Phaser.Scene {
         ]);
 
         if (bestStreak > 0) {
-            this.add.bitmapText(360, 500, 'words', 'grandmaster win streak: ' + (
+            let streakText = this.add.bitmapText(360, 600, 'words', 'grandmaster win streak: ' + (
                 bestStreak <= winStreak ? winStreak : (winStreak + ' (best: ' + bestStreak + ')')
-            ), 80).setOrigin(0.5, 0);
+            ), 80);
+            streakText.setOrigin(0.5);
+            this.endMenu.add(streakText);
         }
     }
 
@@ -496,6 +498,7 @@ export class MainScene extends Phaser.Scene {
                         } else {
                             this.playerTurn = true;
                             this.cutter.setFrame(5);
+                            this.cutter.hide();
                         }
                     }
                 }
